@@ -26,33 +26,49 @@ class _KMPState extends State<KMP> {
     'clock': '',
     'cores': '',
   };
-  var ramdetails = {
-    'maxsize' : '',
-    'nos':'',
-    'mfs':'',
-    'freq':''
+  Map ramdetails = {
+    'maxsize': '',
+    'availsize': '',
+    'nos': '',
+    'mfs': '',
+    'freq': [],
+    'manufacturer': [],
   };
 //wmic cpu get caption, deviceid, name, numberofcores, maxclockspeed, status
   void getDetails() async {
-
     var result;
-      result = await Process.run('cmd', ['/c', 'wmic cpu get name']);
+    result = await Process.run('cmd', ['/c', 'wmic cpu get name']);
     processordetails['name'] = result.stdout.replaceAll('Name', '').trim();
-      result = await Process.run('cmd', ['/c', 'wmic cpu get maxclockspeed']);
+    result = await Process.run('cmd', ['/c', 'wmic cpu get maxclockspeed']);
     processordetails['clock'] =
-      result.stdout.replaceAll('MaxClockSpeed', '').trim();
+        result.stdout.replaceAll('MaxClockSpeed', '').trim();
     result = await Process.run('cmd', ['/c', 'wmic cpu get numberofcores']);
     processordetails['cores'] =
-      result.stdout.replaceAll('NumberOfCores', '').trim();
-    result = await Process.run('cmd', ['/c', 'wmic computersystem get totalphysicalmemory']);
-    ramdetails['maxsize'] =(double.parse(
-      result.stdout.replaceAll('TotalPhysicalMemory', '').trim())/1073741824).toStringAsFixed(1)+" GB";
-    
+        result.stdout.replaceAll('NumberOfCores', '').trim();
+    result = await Process.run(
+        'cmd', ['/c', 'wmic computersystem get totalphysicalmemory']);
+    ramdetails['availsize'] = (double.parse(result.stdout
+                    .replaceAll('TotalPhysicalMemory', '')
+                    .trim()) /
+                1073741824)
+            .toStringAsFixed(1) +
+        " GB";
+    ramdetails['maxsize'] = ((double.parse(result.stdout
+                    .replaceAll('TotalPhysicalMemory', '')
+                    .trim()) /
+                1073741824))
+            .ceil()
+            .toStringAsFixed(1) +
+        " GB";
+    result = await Process.run('cmd', ['/c', 'wmic memorychip get speed']);
+    ramdetails['freq'] =
+        result.stdout.replaceAll('Speed', '').trim().split('\n');
+    result =
+        await Process.run('cmd', ['/c', 'wmic memorychip get manufacturer']);
+    ramdetails['manufacturer'] =
+        result.stdout.replaceAll('Manufacturer', '').trim().split('\n');
 
-    setState(() {
-      
-    });
-
+    setState(() {});
   }
 
   @override
@@ -73,73 +89,71 @@ class _KMPState extends State<KMP> {
         body: Stack(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                physics: ScrollPhysics(),
-                child: Column(
+              child: Center(
+                child: ListView(
                   children: [
                     Text("\n\nProcessor\n\n", style: head),
-              
-                    Expanded(
-                      
-                      child: DataTable2(border: TableBorder.all(), columns: [
-                        DataColumn2(label: Text("Term", style: thead)),
-                        DataColumn2(label: Text("Value", style: thead)),
-                      ], rows: [
-                        DataRow2(cells: [
-                          DataCell(Text('Name')),
-                          DataCell(Text(processordetails['name'] ?? ''))
+                    Container(
+                      height: 200,
+                      child: Expanded(
+                        child: DataTable2(border: TableBorder.all(), columns: [
+                          DataColumn2(label: Text("Term", style: thead)),
+                          DataColumn2(label: Text("Value", style: thead)),
+                        ], rows: [
+                          DataRow2(cells: [
+                            DataCell(Text('Name')),
+                            DataCell(Text(processordetails['name'] ?? ''))
+                          ]),
+                          DataRow2(cells: [
+                            DataCell(Text('Cores')),
+                            DataCell(Text(processordetails['cores'] ?? ''))
+                          ]),
+                          DataRow2(cells: [
+                            DataCell(Text('Base Clock')),
+                            DataCell(Text((double.parse(
+                                            processordetails['clock'] ?? '0') /
+                                        1000)
+                                    .toString() +
+                                " GHz"))
+                          ]),
                         ]),
-                        DataRow2(cells: [
-                          DataCell(Text('Cores')),
-                          DataCell(Text(processordetails['cores'] ?? ''))
-                        ]),
-                        DataRow2(cells: [
-                          DataCell(Text('Base Clock')),
-                          DataCell(Text(
-                              (double.parse(processordetails['clock'] ?? '0') /
-                                          1000)
-                                      .toString() +
-                                  " GHz"))
-                        ]),
-                      ]),
+                      ),
                     ),
                     Text(
                       "\n\nRAM\n\n",
                       style: TextStyle(fontSize: 20),
                     ),
-                    Flexible(
-                      fit: FlexFit.tight,
-                      child: DataTable2(border: TableBorder.all(), columns: [
-                        DataColumn2(label: Text("Term", style: thead)),
-                        DataColumn2(label: Text("Value", style: thead)),
-                      ], rows: [
-                        DataRow2(cells: [
-                          DataCell(Text('Total RAM')),
-                          DataCell(Text(ramdetails['maxsize'] ?? ''))
+                    Container(
+                      height: 300,
+                      child: Flexible(
+                        fit: FlexFit.tight,
+                        child: DataTable2(border: TableBorder.all(), columns: [
+                          DataColumn2(label: Text("Term", style: thead)),
+                          DataColumn2(label: Text("Value", style: thead)),
+                        ], rows: [
+                          DataRow2(cells: [
+                            DataCell(Text('Total RAM')),
+                            DataCell(Text(ramdetails['maxsize'].toString()))
+                          ]),
+                          DataRow2(cells: [
+                            DataCell(Text('Available RAM')),
+                            DataCell(Text(ramdetails['availsize'].toString()))
+                          ]),
+                          DataRow2(cells: [
+                            DataCell(Text('Slots used')),
+                            DataCell(Text(ramdetails['manufacturer'].length.toString()))
+                          ]),
+                          DataRow2(cells: [
+                            DataCell(Text('Speed(MHz)')),
+                            DataCell(Text(ramdetails['freq'].toString()))
+                          ]),
+                          DataRow2(cells: [
+                            DataCell(Text('Manufacturer')),
+                            DataCell(Text((ramdetails['manufacturer']).toString()))
+                          ]),
                         ]),
-                        DataRow2(cells: [
-                          DataCell(Text('Cores')),
-                          DataCell(Text(processordetails['cores'] ?? ''))
-                        ]),
-                        DataRow2(cells: [
-                          DataCell(Text('Base Clock')),
-                          DataCell(Text(
-                              ''))
-                        ]),
-                      ]),
+                      ),
                     ),
-                    // child: Container(
-                    //   alignment: Alignment.center,
-                    // child: Column(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   crossAxisAlignment: CrossAxisAlignment.center,
-                    //   children: [
-                    //             Text("Name Of Processor  :  "+ (processordetails['name'] ?? '')),
-                    //             Text("No of Cores  :  "+(processordetails['cores'] ?? '')),
-                    //             Text("Max Clock Speed  :  "+(processordetails['clock'] ?? '')),
-                    //     OutlinedButton(onPressed: () {}, child: Text("GET DETAILS"))
-                    //   ],
-                    // ),
                   ],
                 ),
               ),
