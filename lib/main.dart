@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:desktop_window/desktop_window.dart';
 
-import 'package:data_table_2/data_table_2.dart';
 import 'package:animated_background/animated_background.dart';
 import 'package:glassmorphism/glassmorphism.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +94,10 @@ Map ramdetails = {
   'manufacturer': [],
   'sizeeach': []
 };
+Map gpu = {
+  'names': [],
+  'vram': [],
+};
 
 Future getDetails() async {
   var result;
@@ -132,10 +136,30 @@ Future getDetails() async {
   //   // l[i] = (double.parse(l[i]) / 1073741824).toString();
   // });
   ramdetails['sizeeach'] = l;
-  result = await Process.run('cmd', ['/c', 'wmic Memphysical get MemoryDevices']);
+  result =
+      await Process.run('cmd', ['/c', 'wmic Memphysical get MemoryDevices']);
   ramdetails['tno'] = result.stdout.replaceAll('MemoryDevices', '').trim();
-  result = await Process.run('cmd', ['/c', 'wmic Memphysical get MaxCapacity ']);
-  ramdetails['maxcap'] = (int.parse(result.stdout.replaceAll('MaxCapacity', '').trim())/1048576).toStringAsFixed(0);
+  result =
+      await Process.run('cmd', ['/c', 'wmic Memphysical get MaxCapacity ']);
+  ramdetails['maxcap'] =
+      (int.parse(result.stdout.replaceAll('MaxCapacity', '').trim()) / 1048576)
+          .toStringAsFixed(0);
+  result = await Process.run(
+      'cmd', ['/c', 'wmic path win32_VideoController get name']);
+  gpu['names'] = result.stdout.replaceAll('Name', '').trim().split('\n');
+  result = await Process.run(
+      'cmd', ['/c', 'wmic path win32_VideoController get adapterram']);
+ 
+  List k = result.stdout.replaceAll('AdapterRAM', '').trim().split('\n');
+
+  // l.forEach((i) {
+  for (int i = 0; i < l.length; i++) {
+    k[i] = (double.parse(k[i]) / 1048576).toStringAsFixed(0)+" MB";
+  }
+  //   // l[i] = (double.parse(l[i]) / 1073741824).toString();
+  // });
+  gpu['vram'] = k;
+  
 }
 
 class KMP extends StatefulWidget {
@@ -209,7 +233,9 @@ class _KMPState extends State<KMP> {
                 ]),
                 DataRow(cells: [
                   DataCell(Text('Slots used/total')),
-                  DataCell(Text(ramdetails['manufacturer'].length.toString()+'/'+ramdetails['tno']))
+                  DataCell(Text(ramdetails['manufacturer'].length.toString() +
+                      '/' +
+                      ramdetails['tno']))
                 ]),
                 DataRow(cells: [
                   DataCell(Text('Ram Size (Each Slot)')),
@@ -221,11 +247,12 @@ class _KMPState extends State<KMP> {
                 ]),
                 DataRow(cells: [
                   DataCell(Text('Manufacturer')),
-                  DataCell(Text((ramdetails['manufacturer']).toString()))
+                  DataCell(Text((ramdetails['manufacturer']).toString()
+                      .replaceAll('[', '').replaceAll(']', '')))
                 ]),
-                 DataRow(cells: [
+                DataRow(cells: [
                   DataCell(Text('Total Supported')),
-                  DataCell(Text((ramdetails['maxcap']).toString()+"GB"))
+                  DataCell(Text((ramdetails['maxcap']).toString() + "GB"))
                 ]),
               ]),
               Text(
@@ -237,22 +264,21 @@ class _KMPState extends State<KMP> {
                 DataColumn(label: Text("Value", style: thead)),
               ], rows: [
                 DataRow(cells: [
-                  DataCell(Text('Available GPUs')),
-                  DataCell(Text(processordetails['name'] ?? ''))
+                  DataCell(Text('GPU')),
+                  DataCell(Text(gpu['names']
+                      .toString()
+                      .replaceAll(',', '\n')
+                      .replaceAll('[', '').replaceAll(']', '')))
                 ]),
                 DataRow(cells: [
-                  DataCell(Text('Cores')),
-                  DataCell(Text(processordetails['cores'] ?? ''))
-                ]),
-                DataRow(cells: [
-                  DataCell(Text('Base Clock')),
-                  DataCell(Text(
-                      (double.parse(processordetails['clock'] ?? '0') / 1000)
-                              .toString() +
-                          " GHz"))
+                  DataCell(Text('VRAM')),
+                  DataCell(Text(gpu['vram'].toString().replaceAll(',', '\n')
+                      .replaceAll('[', '').replaceAll(']', '')))
                 ]),
               ]),
-              SizedBox(height: 150,)
+              SizedBox(
+                height: 150,
+              )
             ],
           ),
         ),
@@ -306,34 +332,41 @@ class _LandingState extends State<Landing> with TickerProviderStateMixin {
                   Color((0xff000000)).withOpacity(0.5),
                 ],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text('Say goodbye to \'I don\'t know!'),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  OutlinedButton(
-                      onPressed: () async {
-                        setState(() {
-                          plswait = "hold tight";
-                        });
-                        getDetails().then((value) {
+              child: Container(
+                padding: EdgeInsets.only(top: 50,bottom: 50),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AnimatedTextKit(
+                      totalRepeatCount: 1,
+                      isRepeatingAnimation: false,
+                      animatedTexts: [TypewriterAnimatedText('Say goodbye to \'I don\'t know!',cursor:'⚡' )]),
+                    
+                    SizedBox(
+                      height: 20,
+                    ),
+                    OutlinedButton(
+                        onPressed: () async {
                           setState(() {
-                            plswait = "";
+                            plswait = "hold tight";
                           });
-
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => KMP()));
-                        });
-                      },
-                      child: Text(
-                        'KnowMyPC',
-                        style: TextStyle(),
-                      )),
-                  Text(plswait)
-                ],
+                          getDetails().then((value) {
+                            setState(() {
+                              plswait = "";
+                            });
+              
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) => KMP()));
+                          });
+                        },
+                        child: Text(
+                          'KnowMyPC',
+                          style: TextStyle(),
+                        )),
+                    Text(plswait)
+                  ],
+                ),
               ),
             ),
           ),
