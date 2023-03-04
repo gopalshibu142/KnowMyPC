@@ -339,9 +339,10 @@ class _LandingState extends State<Landing> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     AnimatedTextKit(
+
                       totalRepeatCount: 1,
                       isRepeatingAnimation: false,
-                      animatedTexts: [TypewriterAnimatedText('Say goodbye to \'I don\'t know!',cursor:'⚡' )]),
+                      animatedTexts: [TypewriterAnimatedText('Say goodbye to \'I don\'t know!',cursor:'⚡',speed: Duration(milliseconds: 100) )]),
                     
                     SizedBox(
                       height: 20,
